@@ -10,20 +10,20 @@ import (
 )
 
 type Client struct {
-	HTTPClient *http.Client
-	GetToken   func() (string, error) // Function to get or refresh the token
+	httpClient *http.Client
+	getToken   func() (string, error) // Function to get or refresh the token
 }
 
 func NewClient(getTokenFunc func() (string, error)) *Client {
 	return &Client{
-		HTTPClient: &http.Client{Timeout: 30 * time.Second},
-		GetToken:   getTokenFunc,
+		httpClient: &http.Client{Timeout: 30 * time.Second},
+		getToken:   getTokenFunc,
 	}
 }
 
 // MakeRequest makes an HTTP request with the given method, URL, and payload.
 func (c *Client) MakeRequest(method, url string, payload interface{}) (string, error) {
-	token, err := c.GetToken()
+	token, err := c.getToken()
 	if err != nil {
 		return "", fmt.Errorf("failed to get token: %v", err)
 	}
@@ -36,7 +36,7 @@ func (c *Client) MakeRequest(method, url string, payload interface{}) (string, e
 	responseBody, err := c.doRequest(request)
 	if err != nil {
 		if err.Error() == "authorization failed" {
-			refreshedToken, err := c.GetToken()
+			refreshedToken, err := c.getToken()
 			if err != nil {
 				return "", err
 			}
@@ -82,7 +82,7 @@ func (c *Client) prepareRequest(method, url string, payload interface{}, token s
 }
 
 func (c *Client) doRequest(req *http.Request) (string, error) {
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
