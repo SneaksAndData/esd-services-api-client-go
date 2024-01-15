@@ -1,4 +1,4 @@
-# Boxer Auth API Connector 
+# Boxer Claim API Connector 
 
 ### Get claims
 
