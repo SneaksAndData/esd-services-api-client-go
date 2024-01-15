@@ -24,7 +24,6 @@ type Config struct {
 }
 
 // New creates a new Connector instance with the provided configuration.
-// Returns a TokenProvider
 func New(c Config) (*Service, error) {
 	s := &Service{httpClient: nil}
 	s.tokenUrl = c.TokenUrl
