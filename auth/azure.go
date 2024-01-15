@@ -6,7 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 )
 
-func (s *service) getAzureDefaultToken() (string, error) {
+func getAzureDefaultToken() (string, error) {
 	cred, err := getAzureCredentials()
 	if err != nil {
 		return "", err
