@@ -5,11 +5,15 @@ import (
 	"github.com/SneaksAndData/esd-services-api-client-go/shared/http"
 )
 
-type TokenProvider struct {
+type Service struct {
 	httpClient *http.Client
-	TokenUrl   string
-	Provider   string
-	//GetBoxerToken func() (string, error)
+	tokenUrl   string
+	provider   string
+}
+
+func (s *Service) GetBoxerToken() (string, error) {
+	targetURL := fmt.Sprintf("%s/token/%s", s.tokenUrl, s.provider)
+	return s.httpClient.MakeRequest("GET", targetURL, nil)
 }
 
 // Config represents the configuration inputs for creating a new auth service.
@@ -21,22 +25,17 @@ type Config struct {
 
 // New creates a new Connector instance with the provided configuration.
 // Returns a TokenProvider
-func New(c Config) (*TokenProvider, error) {
-	t := &TokenProvider{httpClient: nil}
-	t.TokenUrl = c.TokenUrl
-	t.Provider = c.Provider
+func New(c Config) (*Service, error) {
+	s := &Service{httpClient: nil}
+	s.tokenUrl = c.TokenUrl
+	s.provider = c.Provider
 
 	switch c.Provider {
 	case "azuread":
-		t.httpClient = http.NewClient(getAzureDefaultToken)
+		s.httpClient = http.NewClient(getAzureDefaultToken)
 	default:
 		return nil, fmt.Errorf("unsupported token provider: %s", c.Provider)
 	}
 
-	return t, nil
-}
-
-func (t *TokenProvider) GetBoxerToken() (string, error) {
-	targetURL := fmt.Sprintf("%s/token/%s", t.TokenUrl, t.Provider)
-	return t.httpClient.MakeRequest("GET", targetURL, nil)
+	return s, nil
 }
