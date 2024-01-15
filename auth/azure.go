@@ -1,6 +1,4 @@
-// Package azure provides functionality for authenticating with Azure.
-
-package azure
+package auth
 
 import (
 	"context"
@@ -8,7 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 )
 
-func GetDefaultToken() (string, error) {
+func (s *service) getAzureDefaultToken() (string, error) {
 	cred, err := getAzureCredentials()
 	if err != nil {
 		return "", err
