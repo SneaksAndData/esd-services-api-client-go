@@ -8,34 +8,32 @@ import (
 	"log"
 )
 
-const codeRoot = "/ecco/dist"
-
-var failedStages = []interface{}{
+var failedStages = []string{
 	"FAILED",
 	"SCHEDULING_FAILED",
 	"RETRIES_EXCEEDED",
 	"SUBMISSION_FAILED",
 	"STALE",
 }
-var successStages = []interface{}{"COMPLETED"}
+var successStages = []string{"COMPLETED"}
 
 type Service struct {
 	httpClient *http.Client
 	baseUrl    string
 }
 
-type JobRequest struct {
-	inputs      []JobSocket
-	outputs     []JobSocket
-	args        interface{}
-	tag         string
-	parallelism int
+type JobParams struct {
+	ClientTag           string
+	ExtraArguments      map[string]interface{}
+	ProjectInputs       []JobSocket
+	ProjectOutputs      []JobSocket
+	ExpectedParallelism int
 }
 
 type JobSocket struct {
-	alias      string
-	dataPath   string
-	dataFormat string
+	Alias      string
+	DataPath   string
+	DataFormat string
 }
 
 type SubmissionConfiguration struct {
@@ -47,17 +45,45 @@ type SubmissionConfiguration struct {
 
 type submission struct {
 	Id    string
-	Stage interface{}
+	Stage string
 }
 
-func (s Service) SubmitJob(request JobRequest, sparkJobName string) (string, error) {
-	// TODO: check if submission already exists
+func (s Service) RunJob(request JobParams, sparkJobName string) (string, error) {
+	submissionId, err := s.checkExistingSubmission(request.ClientTag)
+	if err != nil {
+		return "", fmt.Errorf("failed to check if submission exists: %w", err)
+	}
+
+	if submissionId != "" {
+		return submissionId, nil
+	}
+
+	r, err := s.submitJob(request, sparkJobName)
+	if err != nil {
+		return "", fmt.Errorf("submit job failed with error: %w", err)
+	}
+	return r.Id, nil
+}
+
+func (s Service) submitJob(request JobParams, sparkJobName string) (submission, error) {
+	log.Printf("Submitting request: %+v", request)
 	targetURL := fmt.Sprintf("%s/job/submit/%s", s.baseUrl, sparkJobName)
-	return s.httpClient.MakeRequest("POST", targetURL, request)
+	result, err := s.httpClient.MakeRequest("POST", targetURL, request)
+	if err != nil {
+		return submission{}, fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	var sub submission
+	if err := json.Unmarshal([]byte(result), &sub); err != nil {
+		return submission{
+			Id:    "",
+			Stage: "",
+		}, fmt.Errorf("error unmarshaling response: %w", err)
+	}
+	log.Printf("Beast has accepted the request, stage: %s, id: %s", sub.Stage, sub.Id)
+	return sub, nil
 }
 
-func (s Service) CheckExistingSubmission(tag string) (string, error) {
-	//fmt.Println(fmt.Sprintf("Looking for existing submission of %s", tag))
+func (s Service) checkExistingSubmission(tag string) (string, error) {
 	log.Printf("Looking for existing submission of %s", tag)
 	targetURL := fmt.Sprintf("%s/job/requests/tags/%s", s.baseUrl, tag)
 	response, err := s.httpClient.MakeRequest("GET", targetURL, nil)
@@ -69,23 +95,20 @@ func (s Service) CheckExistingSubmission(tag string) (string, error) {
 		return "", nil
 	}
 
-	//var jsonResponse map[string]interface{}
-	var arr []string
-	if err := json.Unmarshal([]byte(response), &arr); err != nil {
+	var ids []string
+	if err := json.Unmarshal([]byte(response), &ids); err != nil {
 		return "", fmt.Errorf("error unmarshaling response: %w", err)
 	}
 
 	var runningSubmissions []submission
-	//var jsonResponse map[string]interface{}
-	//json.Unmarshal([]byte(response), &jsonResponse)
-	for _, id := range arr {
+	for _, id := range ids {
 		stage, err := s.GetLifecycleStage(id)
 		if err != nil {
 			return "", fmt.Errorf("error getting lifecycle stage for %s: %w", id, err)
 		}
-		if !slices.Contains(successStages, stage) && !slices.Contains(failedStages, stage) {
+		if !slices.Contains(successStages, stage.(string)) && !slices.Contains(failedStages, stage.(string)) {
 			log.Printf("Found a running submission of %s: %s", tag, id)
-			runningSubmissions = append(runningSubmissions, submission{Id: id, Stage: stage})
+			runningSubmissions = append(runningSubmissions, submission{Id: id, Stage: stage.(string)})
 		}
 	}
 
@@ -97,16 +120,12 @@ func (s Service) CheckExistingSubmission(tag string) (string, error) {
 	if len(runningSubmissions) > 1 {
 		return "", fmt.Errorf("fatal: more than one submission of %s is running: %+v. Please review their status and restart/terminate the task accordingly", tag, runningSubmissions)
 	}
-	a := runningSubmissions[0]
-	fmt.Println(a)
 	run, err := json.Marshal(runningSubmissions[0])
 	if err != nil {
 		return "", fmt.Errorf("error marshaling running submission: %w", err)
 	}
-	str := string(run)
 
-	return str, err
-
+	return string(run), err
 }
 
 func (s Service) GetLifecycleStage(id string) (interface{}, error) {
@@ -134,7 +153,9 @@ func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) 
 		fmt.Println(err)
 	}
 	var jsonMap SubmissionConfiguration
-	json.Unmarshal([]byte(response), &jsonMap)
+	if err := json.Unmarshal([]byte(response), &jsonMap); err != nil {
+		return SubmissionConfiguration{}, fmt.Errorf("error unmarshaing response %w", err)
+	}
 
 	return jsonMap, nil
 }
