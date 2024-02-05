@@ -65,7 +65,7 @@ func (c *Client) prepareRequest(method, url string, payload interface{}, token s
 	if payload != nil {
 		jsonPayload, err := json.Marshal(payload)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error marshaling payload: %w", err)
 		}
 		body = bytes.NewBuffer(jsonPayload)
 	}

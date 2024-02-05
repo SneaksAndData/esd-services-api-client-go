@@ -30,7 +30,7 @@ func (s Service) AddClaim(user string, provider string, claims []string) (string
 
 	payload, err := json.Marshal(preparePayload(claims, "Insert"))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error marshaling payload: %w", err)
 	}
 	return s.httpClient.MakeRequest("PATCH", targetURL, bytes.NewBuffer(payload))
 }
@@ -40,7 +40,7 @@ func (s Service) RemoveClaim(user string, provider string, claims []string) (str
 
 	payload, err := json.Marshal(preparePayload(claims, "Delete"))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error marshaling payload: %w", err)
 	}
 
 	return s.httpClient.MakeRequest("PATCH", targetURL, bytes.NewBuffer(payload))
