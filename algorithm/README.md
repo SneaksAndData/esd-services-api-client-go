@@ -73,7 +73,9 @@ func main() {
 	byteValue, _ := io.ReadAll(jsonFile)
 
 	var input map[string]interface{}
-	json.Unmarshal([]byte(byteValue), &input)
+	if err := json.Unmarshal([]byte(byteValue), &input); err != nil {
+		fmt.Errorf("error unmarshaling response: %w", err)
+	}
 
 	// Run algorithm
 	response, err := algorithmService.CreateRun("algorithm-name", input, "tag")
