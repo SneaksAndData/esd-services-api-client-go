@@ -2,6 +2,7 @@ package algorithm
 
 import (
 	"fmt"
+
 	"github.com/SneaksAndData/esd-services-api-client-go/shared/http"
 )
 
