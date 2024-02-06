@@ -1,0 +1,33 @@
+name: Go Module Release
+
+on: workflow_dispatch
+
+jobs:
+  create_release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21'
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Create Tag
+        uses: SneaksAndData/github-actions/semver_release@v0.1.0
+        with:
+          major_v: 0
+          minor_v: 0
+        id: semver
+
+      - name: Output new version
+        run: echo "The new version is ${{ steps.semver.outputs.version }}"
