@@ -15,8 +15,8 @@ func main() {
 	// Configuration for the algorithm service
 	var config = algorithm.Config{
 		GetTokenFunc: getCachedBoxerToken,
-		SchedulerUrl: "https://example.com",
-		ApiVersion:   "v1.2",
+		SchedulerURL: "https://example.com",
+		APIVersion:   "v1.2",
 	}
 	// Create a new instance of the algorithm service
 	algorithmService, err := algorithm.New(config)
@@ -54,8 +54,8 @@ func main() {
 	// Configuration for the algorithm service
 	var config = algorithm.Config{
 		GetTokenFunc: getCachedBoxerToken,
-		SchedulerUrl: "https://example.com",
-		ApiVersion:   "v1.2",
+		SchedulerURL: "https://example.com",
+		APIVersion:   "v1.2",
 	}
 	// Create a new instance of the algorithm service
 	algorithmService, err := algorithm.New(config)

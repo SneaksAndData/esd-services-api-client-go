@@ -14,7 +14,7 @@ import (
 func main() {
 	// Configuration for the auth service
 	config := auth.Config{
-		TokenUrl: "https://example.com",
+		TokenURL: "https://example.com",
 		Provider: "azuread",
 	}
 
