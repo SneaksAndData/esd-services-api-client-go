@@ -14,7 +14,7 @@ import (
 func main() {
 	// Configuration for the spark service
 	configSpark := spark.Config{
-		BaseUrl:     "example.com",
+		BaseURL:     "example.com",
 		GetTokenFunc: getToken,
 	}
 
@@ -69,7 +69,7 @@ import (
 func main() {
 	// Configuration for the spark service
 	configSpark := spark.Config{
-		BaseUrl:      "example.com",
+		BaseURL:      "example.com",
 		GetTokenFunc: getToken,
 	}
 
@@ -101,7 +101,7 @@ import (
 func main() {
 	// Configuration for the spark service
 	configSpark := spark.Config{
-		BaseUrl:      "example.com",
+		BaseURL:      "example.com",
 		GetTokenFunc: getToken,
 	}
 
@@ -133,7 +133,7 @@ import (
 func main() {
 	// Configuration for the spark service
 	configSpark := spark.Config{
-		BaseUrl:      "example.com",
+		BaseURL:      "example.com",
 		GetTokenFunc: getToken,
 	}
 
@@ -166,7 +166,7 @@ import (
 func main() {
 	// Configuration for the spark service
 	configSpark := spark.Config{
-		BaseUrl:      "example.com",
+		BaseURL:      "example.com",
 		GetTokenFunc: getToken,
 	}
 

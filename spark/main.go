@@ -1,3 +1,4 @@
+// Package spark provides functionalities to manage and interact with Spark job submissions using Beast API.
 package spark
 
 import (
@@ -8,6 +9,7 @@ import (
 	"log"
 )
 
+// Predefined lists of stages indicating job failure.
 var failedStages = []string{
 	"FAILED",
 	"SCHEDULING_FAILED",
@@ -15,13 +17,17 @@ var failedStages = []string{
 	"SUBMISSION_FAILED",
 	"STALE",
 }
+
+// Predefined lists of stages indicating job success.
 var successStages = []string{"COMPLETED"}
 
+// Service struct encapsulates the HTTP client and base URL for interacting with Beast.
 type Service struct {
 	httpClient *http.Client
-	baseUrl    string
+	baseURL    string
 }
 
+// JobParams defines the parameters for a Spark job submission.
 type JobParams struct {
 	ClientTag           string
 	ExtraArguments      map[string]interface{}
@@ -30,12 +36,14 @@ type JobParams struct {
 	ExpectedParallelism int
 }
 
+// JobSocket defines a data source or target for a Spark job.
 type JobSocket struct {
 	Alias      string
 	DataPath   string
 	DataFormat string
 }
 
+// SubmissionConfiguration represents the configuration of a Spark job submission.
 type SubmissionConfiguration struct {
 	RootPath          string      `json:"rootPath"`
 	ProjectName       string      `json:"projectName"`
@@ -43,31 +51,34 @@ type SubmissionConfiguration struct {
 	SubmissionDetails interface{} `json:"submissionDetails"`
 }
 
+// submission represents the state of a Spark job submission.
 type submission struct {
-	Id    string
+	ID    string
 	Stage string
 }
 
+// RunJob submits a new Spark job or returns the ID of an existing job if one matches the ClientTag.
 func (s Service) RunJob(request JobParams, sparkJobName string) (string, error) {
-	submissionId, err := s.checkExistingSubmission(request.ClientTag)
+	submissionID, err := s.checkExistingSubmission(request.ClientTag)
 	if err != nil {
 		return "", fmt.Errorf("failed to check if submission exists: %w", err)
 	}
 
-	if submissionId != "" {
-		return submissionId, nil
+	if submissionID != "" {
+		return submissionID, nil
 	}
 
 	r, err := s.submitJob(request, sparkJobName)
 	if err != nil {
 		return "", fmt.Errorf("submit job failed with error: %w", err)
 	}
-	return r.Id, nil
+	return r.ID, nil
 }
 
+// submitJob handles the actual submission of a Spark job.
 func (s Service) submitJob(request JobParams, sparkJobName string) (submission, error) {
 	log.Printf("Submitting request: %+v", request)
-	targetURL := fmt.Sprintf("%s/job/submit/%s", s.baseUrl, sparkJobName)
+	targetURL := fmt.Sprintf("%s/job/submit/%s", s.baseURL, sparkJobName)
 	result, err := s.httpClient.MakeRequest("POST", targetURL, request)
 	if err != nil {
 		return submission{}, fmt.Errorf("error making request to %s: %w", targetURL, err)
@@ -75,17 +86,18 @@ func (s Service) submitJob(request JobParams, sparkJobName string) (submission, 
 	var sub submission
 	if err := json.Unmarshal([]byte(result), &sub); err != nil {
 		return submission{
-			Id:    "",
+			ID:    "",
 			Stage: "",
 		}, fmt.Errorf("error unmarshaling response: %w", err)
 	}
-	log.Printf("Beast has accepted the request, stage: %s, id: %s", sub.Stage, sub.Id)
+	log.Printf("Beast has accepted the request, stage: %s, id: %s", sub.Stage, sub.ID)
 	return sub, nil
 }
 
+// checkExistingSubmission checks if there is an existing submission for the given tag.
 func (s Service) checkExistingSubmission(tag string) (string, error) {
 	log.Printf("Looking for existing submission of %s", tag)
-	targetURL := fmt.Sprintf("%s/job/requests/tags/%s", s.baseUrl, tag)
+	targetURL := fmt.Sprintf("%s/job/requests/tags/%s", s.baseURL, tag)
 	response, err := s.httpClient.MakeRequest("GET", targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
@@ -108,7 +120,7 @@ func (s Service) checkExistingSubmission(tag string) (string, error) {
 		}
 		if !slices.Contains(successStages, stage.(string)) && !slices.Contains(failedStages, stage.(string)) {
 			log.Printf("Found a running submission of %s: %s", tag, id)
-			runningSubmissions = append(runningSubmissions, submission{Id: id, Stage: stage.(string)})
+			runningSubmissions = append(runningSubmissions, submission{ID: id, Stage: stage.(string)})
 		}
 	}
 
@@ -128,8 +140,9 @@ func (s Service) checkExistingSubmission(tag string) (string, error) {
 	return string(run), err
 }
 
+// GetLifecycleStage retrieves the current lifecycle stage of a submission.
 func (s Service) GetLifecycleStage(id string) (interface{}, error) {
-	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseUrl, id)
+	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseURL, id)
 	response, err := s.httpClient.MakeRequest("GET", targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
@@ -141,13 +154,15 @@ func (s Service) GetLifecycleStage(id string) (interface{}, error) {
 	return jsonMap["lifeCycleStage"], nil
 }
 
+// GetRuntimeInfo retrieves the runtime information of a submission.
 func (s Service) GetRuntimeInfo(id string) (string, error) {
-	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseUrl, id)
+	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseURL, id)
 	return s.httpClient.MakeRequest("GET", targetURL, nil)
 }
 
+// GetConfiguration checks if a configuration is deployed with the specified name.
 func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) {
-	targetURL := fmt.Sprintf("%s/job/deployed/%s", s.baseUrl, name)
+	targetURL := fmt.Sprintf("%s/job/deployed/%s", s.baseURL, name)
 	response, err := s.httpClient.MakeRequest("GET", targetURL, nil)
 	if err != nil {
 		fmt.Println(err)
@@ -160,21 +175,24 @@ func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) 
 	return jsonMap, nil
 }
 
+// GetLogs retrieves the logs of a submission.
 func (s Service) GetLogs(id string) (string, error) {
-	targetURL := fmt.Sprintf("%s/job/logs/%s", s.baseUrl, id)
+	targetURL := fmt.Sprintf("%s/job/logs/%s", s.baseURL, id)
 	return s.httpClient.MakeRequest("GET", targetURL, nil)
 }
 
+// Config represents the configuration needed to create a new Service instance.
 type Config struct {
-	BaseUrl      string
+	BaseURL      string
 	GetTokenFunc func() (string, error)
 	HTTPClient   *http.Client
 }
 
+// New creates a new instance of the Service using the provided Config.
 func New(c Config) (*Service, error) {
 	s := &Service{
 		httpClient: http.NewClient(c.GetTokenFunc),
-		baseUrl:    c.BaseUrl,
+		baseURL:    c.BaseURL,
 	}
 	return s, nil
 }
