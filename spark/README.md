@@ -18,7 +18,7 @@ func main() {
 		GetTokenFunc: getToken,
 	}
 
-	// Create a new instance of the claim service
+	// Create a new instance of the spark service
 	sparkService, err := spark.New(configSpark)
 	if err != nil {
 		log.Fatalf("Failed to create spark service: %v", err)
@@ -73,7 +73,7 @@ func main() {
 		GetTokenFunc: getToken,
 	}
 
-	// Create a new instance of the claim service
+	// Create a new instance of the spark service
 	sparkService, err := spark.New(configSpark)
 	if err != nil {
 		log.Fatalf("Failed to create spark service: %v", err)
@@ -105,7 +105,7 @@ func main() {
 		GetTokenFunc: getToken,
 	}
 
-	// Create a new instance of the claim service
+	// Create a new instance of the spark service
 	sparkService, err := spark.New(configSpark)
 	if err != nil {
 		log.Fatalf("Failed to create spark service: %v", err)
@@ -137,7 +137,7 @@ func main() {
 		GetTokenFunc: getToken,
 	}
 
-	// Create a new instance of the claim service
+	// Create a new instance of the spark service
 	sparkService, err := spark.New(configSpark)
 	if err != nil {
 		log.Fatalf("Failed to create spark service: %v", err)
@@ -170,7 +170,7 @@ func main() {
 		GetTokenFunc: getToken,
 	}
 
-	// Create a new instance of the claim service
+	// Create a new instance of the spark service
 	sparkService, err := spark.New(configSpark)
 	if err != nil {
 		log.Fatalf("Failed to create spark service: %v", err)
