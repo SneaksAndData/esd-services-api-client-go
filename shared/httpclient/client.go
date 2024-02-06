@@ -1,4 +1,4 @@
-package http
+package httpclient
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Client wraps the standard http.Client and adds automatic token retrieval for making authenticated requests.
+// Client wraps the standard httpclient.Client and adds automatic token retrieval for making authenticated requests.
 type Client struct {
 	httpClient *http.Client
 	getToken   func() (string, error) // Function to get or refresh the token

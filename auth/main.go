@@ -3,12 +3,13 @@ package auth
 
 import (
 	"fmt"
-	"github.com/SneaksAndData/esd-services-api-client-go/shared/http"
+	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
+	"net/http"
 )
 
 // Service encapsulates the HTTP client, token URL, and provider for retrieving authentication tokens.
 type Service struct {
-	httpClient *http.Client
+	httpClient *httpclient.Client
 	tokenURL   string
 	provider   string
 }
@@ -16,7 +17,7 @@ type Service struct {
 // GetBoxerToken retrieves an authentication token from the configured provider.
 func (s *Service) GetBoxerToken() (string, error) {
 	targetURL := fmt.Sprintf("%s/token/%s", s.tokenURL, s.provider)
-	return s.httpClient.MakeRequest("GET", targetURL, nil)
+	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 }
 
 // Config represents the configuration inputs for creating a new auth service.
@@ -35,7 +36,7 @@ func New(c Config) (*Service, error) {
 
 	switch c.Provider {
 	case "azuread":
-		s.httpClient = http.NewClient(getAzureDefaultToken)
+		s.httpClient = httpclient.NewClient(getAzureDefaultToken)
 	default:
 		return nil, fmt.Errorf("unsupported token provider: %s", c.Provider)
 	}

@@ -4,13 +4,14 @@ package algorithm
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 
-	"github.com/SneaksAndData/esd-services-api-client-go/shared/http"
+	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
 )
 
 // Service encapsulates the HTTP client and URLs needed to interact with the algorithm service.
 type Service struct {
-	httpClient   *http.Client
+	httpClient   *httpclient.Client
 	schedulerURL string
 	receiverURL  string
 	apiVersion   string
@@ -58,8 +59,7 @@ type ConfigurationEntry struct {
 // RetrieveRun fetches the results of a specific algorithm run identified by runID.
 func (s Service) RetrieveRun(runID string, algorithmName string) (string, error) {
 	targetURL := fmt.Sprintf("%s/algorithm/%s/results/%s/requests/%s", s.schedulerURL, s.apiVersion, algorithmName, runID)
-
-	return s.httpClient.MakeRequest("GET", targetURL, nil)
+	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 }
 
 // CreateRun initiates a new run of an algorithm with the given name, input parameters, and tag.
@@ -89,14 +89,14 @@ func (s Service) CreateRun(algorithmName string, input map[string]interface{}, t
 		CustomConfiguration: customConfig,
 		Tag:                 tag,
 	}
-	return s.httpClient.MakeRequest("POST", targetURL, body)
+	return s.httpClient.MakeRequest(http.MethodPost, targetURL, body)
 
 }
 
 // Config represents the configuration needed to create a new Service instance.
 type Config struct {
 	GetTokenFunc func() (string, error) // Function to retrieve authentication token
-	HTTPClient   *http.Client           // HTTP client to be used by the Service
+	HTTPClient   *httpclient.Client     // HTTP client to be used by the Service
 	SchedulerURL string                 // Base URL for the scheduler service
 	APIVersion   string                 // API version to be used in requests
 }
@@ -104,7 +104,7 @@ type Config struct {
 // New creates a new instance of the Service using the provided Config.
 func New(c Config) (*Service, error) {
 	s := &Service{
-		httpClient:   http.NewClient(c.GetTokenFunc),
+		httpClient:   httpclient.NewClient(c.GetTokenFunc),
 		schedulerURL: c.SchedulerURL,
 		apiVersion:   c.APIVersion,
 	}

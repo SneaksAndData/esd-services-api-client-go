@@ -5,13 +5,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SneaksAndData/esd-services-api-client-go/shared/http"
+	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
+	"net/http"
 	"strings"
 )
 
 // Service represents a client for the claim management service.
 type Service struct {
-	httpClient *http.Client
+	httpClient *httpclient.Client
 	claimURL   string
 }
 
@@ -26,7 +27,7 @@ type claimPayload struct {
 func (s Service) GetClaim(user string, provider string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimURL, provider, user)
 
-	return s.httpClient.MakeRequest("GET", targetURL, nil)
+	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 }
 
 // AddClaim adds claims for a user under a specific provider.
@@ -37,7 +38,7 @@ func (s Service) AddClaim(user string, provider string, claims []string) (string
 	if err != nil {
 		return "", fmt.Errorf("error marshaling payload: %w", err)
 	}
-	return s.httpClient.MakeRequest("PATCH", targetURL, bytes.NewBuffer(payload))
+	return s.httpClient.MakeRequest(http.MethodPatch, targetURL, bytes.NewBuffer(payload))
 }
 
 // RemoveClaim removes claims for a user under a specific provider.
@@ -49,7 +50,7 @@ func (s Service) RemoveClaim(user string, provider string, claims []string) (str
 		return "", fmt.Errorf("error marshaling payload: %w", err)
 	}
 
-	return s.httpClient.MakeRequest("PATCH", targetURL, bytes.NewBuffer(payload))
+	return s.httpClient.MakeRequest(http.MethodPatch, targetURL, bytes.NewBuffer(payload))
 }
 
 // preparePayload prepares the payload for claim operations.
@@ -70,27 +71,27 @@ func preparePayload(claims []string, operation string) claimPayload {
 func (s Service) AddUser(user string, provider string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimURL, provider, user)
 
-	return s.httpClient.MakeRequest("POST", targetURL, nil)
+	return s.httpClient.MakeRequest(http.MethodPost, targetURL, nil)
 }
 
 // RemoveUser deletes a user under a specific provider.
 func (s Service) RemoveUser(user string, provider string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimURL, provider, user)
 
-	return s.httpClient.MakeRequest("DELETE", targetURL, nil)
+	return s.httpClient.MakeRequest(http.MethodDelete, targetURL, nil)
 }
 
 // Config holds the configuration needed to initialize a new Service instance.
 type Config struct {
 	ClaimURL     string
 	GetTokenFunc func() (string, error)
-	HTTPClient   *http.Client
+	HTTPClient   *httpclient.Client
 }
 
 // New initializes a new instance of the Service using the provided Config.
 func New(c Config) (*Service, error) {
 	s := &Service{
-		httpClient: http.NewClient(c.GetTokenFunc),
+		httpClient: httpclient.NewClient(c.GetTokenFunc),
 		claimURL:   c.ClaimURL,
 	}
 	return s, nil
