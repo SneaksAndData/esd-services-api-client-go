@@ -9,11 +9,13 @@ import (
 	"time"
 )
 
+// Client wraps the standard http.Client and adds automatic token retrieval for making authenticated requests.
 type Client struct {
 	httpClient *http.Client
 	getToken   func() (string, error) // Function to get or refresh the token
 }
 
+// NewClient creates a new Client instance with a specified function for token retrieval.
 func NewClient(getTokenFunc func() (string, error)) *Client {
 	return &Client{
 		httpClient: &http.Client{Timeout: 30 * time.Second},
@@ -21,7 +23,8 @@ func NewClient(getTokenFunc func() (string, error)) *Client {
 	}
 }
 
-// MakeRequest makes an HTTP request with the given method, URL, and payload.
+// MakeRequest creates and executes an HTTP request using the given method, URL, and payload.
+// It automatically handles token retrieval and will retry the request once if the token is expired.
 func (c *Client) MakeRequest(method, url string, payload interface{}) (string, error) {
 	token, err := c.getToken()
 	if err != nil {
@@ -51,14 +54,15 @@ func (c *Client) MakeRequest(method, url string, payload interface{}) (string, e
 				return "", err // Return error if retry also fails
 			}
 			return responseBody, nil // Return successful response from retry
-		} else {
-			return "", err // Return original error if not an auth failure
 		}
+		return "", err // Return original error if not an auth failure
+
 	}
 
 	return responseBody, nil // Return successful response from initial request
 }
 
+// prepareRequest creates an *http.Request object with the given method, URL, token, and payload.
 func (c *Client) prepareRequest(method, url string, payload interface{}, token string) (*http.Request, error) {
 	var body io.Reader
 
@@ -81,6 +85,7 @@ func (c *Client) prepareRequest(method, url string, payload interface{}, token s
 	return req, nil
 }
 
+// doRequest executes the given *http.Request and returns the response body as a string.
 func (c *Client) doRequest(req *http.Request) (string, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
