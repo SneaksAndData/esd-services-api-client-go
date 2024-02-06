@@ -2,6 +2,7 @@
 package algorithm
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/SneaksAndData/esd-services-api-client-go/shared/http"
@@ -17,10 +18,41 @@ type Service struct {
 
 // Payload defines the structure of the request body for creating algorithm runs.
 type Payload struct {
-	AlgorithmParameters interface{}
+	AlgorithmParameters map[string]interface{}
 	AlgorithmName       string
-	CustomConfiguration interface{}
+	CustomConfiguration CustomConfiguration
 	Tag                 string
+}
+
+type CustomConfiguration struct {
+	imageRepository      string
+	imageTag             string
+	deadlineSeconds      int
+	maximumRetries       int
+	env                  []ConfigurationEntry
+	secrets              []string
+	args                 []ConfigurationEntry
+	cpuLimit             string
+	memoryLimit          string
+	workgroup            string
+	additionalWorkgroups map[string]string
+	version              string
+	monitoringParameters []string
+	customResources      map[string]string
+	speculativeAttempts  int
+}
+
+type ConfigurationValueType string
+
+const (
+	PLAIN              ConfigurationValueType = "PLAIN"
+	RELATIVE_REFERENCE ConfigurationValueType = "RELATIVE_REFERENCE"
+)
+
+type ConfigurationEntry struct {
+	name      string
+	value     string
+	valueType *ConfigurationValueType
 }
 
 // RetrieveRun fetches the results of a specific algorithm run identified by runID.
@@ -33,10 +65,28 @@ func (s Service) RetrieveRun(runID string, algorithmName string) (string, error)
 // CreateRun initiates a new run of an algorithm with the given name, input parameters, and tag.
 func (s Service) CreateRun(algorithmName string, input map[string]interface{}, tag string) (string, error) {
 	targetURL := fmt.Sprintf("%s/algorithm/%s/run/%s", s.schedulerURL, s.apiVersion, algorithmName)
+	// Handle CustomConfiguration
+	conf, exists := input["custom_configuration"]
+	if !exists {
+		return "", fmt.Errorf("custom_configuration not provided")
+	}
+	customConfigMap, ok := conf.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("custom_configuration is not of the expected type")
+	}
+	customConfigJSON, err := json.Marshal(customConfigMap)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal custom_configuration: %w", err)
+	}
+	var customConfig CustomConfiguration
+	if err := json.Unmarshal(customConfigJSON, &customConfig); err != nil {
+		return "", fmt.Errorf("failed to unmarshal custom_configuration into CustomConfiguration: %w", err)
+	}
+
 	body := Payload{
-		AlgorithmParameters: input["algorithm_parameters"],
+		AlgorithmParameters: input["algorithm_parameters"].(map[string]interface{}),
 		AlgorithmName:       algorithmName,
-		CustomConfiguration: input["custom_configuration"],
+		CustomConfiguration: customConfig,
 		Tag:                 tag,
 	}
 	return s.httpClient.MakeRequest("POST", targetURL, body)
