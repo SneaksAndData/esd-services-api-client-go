@@ -1,0 +1,41 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+
+jobs:
+  build:
+    name: Validate code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go 1.21
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - name: Verify dependencies
+        run: go mod verify
+      - name: Install dependencies
+        run: |
+          go get .
+      - name: Run go vet
+        run: go vet ./...
+      - name: Build
+        run: go build -v ./...
+      - name: Lint
+        run: |
+          set -euxo pipefail
+          LINT_VERSION=1.54.1
+          curl -fsSL https://github.com/golangci/golangci-lint/releases/download/v${LINT_VERSION}/golangci-lint-${LINT_VERSION}-linux-amd64.tar.gz | \
+            tar xz --strip-components 1 --wildcards \*/golangci-lint
+          mkdir -p bin && mv golangci-lint bin/
+          
+          bin/golangci-lint run --out-format=github-actions --timeout=3m
+          gofmt -d ./
+
+      - name: Test with the Go CLI
+        run: go test -race -vet=off ./...
