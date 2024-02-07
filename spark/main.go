@@ -19,7 +19,7 @@ var failedStages = []string{
 }
 var successStages = []string{"COMPLETED"}
 
-// Service encapsulates the HTTP client and URL needed to interact with the spark service.
+// Service encapsulates the HTTP client and URL needed to interact with the Spark service.
 type Service struct {
 	httpClient *httpclient.Client
 	baseURL    string
