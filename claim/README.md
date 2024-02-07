@@ -14,7 +14,7 @@ import (
 func main() {
 	// Configuration for the claim service
 	config := claim.Config{
-		ClaimUrl:     "example.com",
+		ClaimURL:     "example.com",
 		GetTokenFunc: getToken,
 	}
 
