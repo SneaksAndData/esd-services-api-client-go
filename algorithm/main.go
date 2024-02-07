@@ -26,21 +26,21 @@ type Payload struct {
 }
 
 type CustomConfiguration struct {
-	imageRepository      string
-	imageTag             string
-	deadlineSeconds      int
-	maximumRetries       int
-	env                  []ConfigurationEntry
-	secrets              []string
-	args                 []ConfigurationEntry
-	cpuLimit             string
-	memoryLimit          string
-	workgroup            string
-	additionalWorkgroups map[string]string
-	version              string
-	monitoringParameters []string
-	customResources      map[string]string
-	speculativeAttempts  int
+	ImageRepository      string
+	ImageTag             string
+	DeadlineSeconds      int
+	MaximumRetries       int
+	Env                  []ConfigurationEntry
+	Secrets              []string
+	Args                 []ConfigurationEntry
+	CpuLimit             string
+	MemoryLimit          string
+	Workgroup            string
+	AdditionalWorkgroups map[string]string
+	Version              string
+	MonitoringParameters []string
+	CustomResources      map[string]string
+	SpeculativeAttempts  int
 }
 
 type ConfigurationValueType string
