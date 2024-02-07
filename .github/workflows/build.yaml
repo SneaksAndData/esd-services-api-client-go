@@ -34,7 +34,7 @@ jobs:
             tar xz --strip-components 1 --wildcards \*/golangci-lint
           mkdir -p bin && mv golangci-lint bin/
           
-          bin/golangci-lint run --out-format=github-actions --timeout=3m || STATUS=$?
+          bin/golangci-lint run --out-format=github-actions --timeout=3m
           gofmt -d ./
 
       - name: Test with the Go CLI
