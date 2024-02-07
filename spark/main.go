@@ -3,12 +3,11 @@ package spark
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SneaksAndData/esd-services-api-client-go/shared/http"
+	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
 	"golang.org/x/exp/slices"
 	"log"
+	"net/http"
 )
-
-const codeRoot = "/ecco/dist"
 
 var failedStages = []interface{}{
 	"FAILED",
@@ -20,7 +19,7 @@ var failedStages = []interface{}{
 var successStages = []interface{}{"COMPLETED"}
 
 type Service struct {
-	httpClient *http.Client
+	httpClient *httpclient.Client
 	baseUrl    string
 }
 
@@ -53,14 +52,14 @@ type submission struct {
 func (s Service) SubmitJob(request JobRequest, sparkJobName string) (string, error) {
 	// TODO: check if submission already exists
 	targetURL := fmt.Sprintf("%s/job/submit/%s", s.baseUrl, sparkJobName)
-	return s.httpClient.MakeRequest("POST", targetURL, request)
+	return s.httpClient.MakeRequest(http.MethodPost, targetURL, request)
 }
 
 func (s Service) CheckExistingSubmission(tag string) (string, error) {
 	//fmt.Println(fmt.Sprintf("Looking for existing submission of %s", tag))
 	log.Printf("Looking for existing submission of %s", tag)
 	targetURL := fmt.Sprintf("%s/job/requests/tags/%s", s.baseUrl, tag)
-	response, err := s.httpClient.MakeRequest("GET", targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
 	}
@@ -111,7 +110,7 @@ func (s Service) CheckExistingSubmission(tag string) (string, error) {
 
 func (s Service) GetLifecycleStage(id string) (interface{}, error) {
 	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseUrl, id)
-	response, err := s.httpClient.MakeRequest("GET", targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
 	}
@@ -124,12 +123,12 @@ func (s Service) GetLifecycleStage(id string) (interface{}, error) {
 
 func (s Service) GetRuntimeInfo(id string) (string, error) {
 	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseUrl, id)
-	return s.httpClient.MakeRequest("GET", targetURL, nil)
+	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 }
 
 func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) {
 	targetURL := fmt.Sprintf("%s/job/deployed/%s", s.baseUrl, name)
-	response, err := s.httpClient.MakeRequest("GET", targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -141,18 +140,18 @@ func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) 
 
 func (s Service) GetLogs(id string) (string, error) {
 	targetURL := fmt.Sprintf("%s/job/logs/%s", s.baseUrl, id)
-	return s.httpClient.MakeRequest("GET", targetURL, nil)
+	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 }
 
 type Config struct {
 	BaseUrl      string
 	GetTokenFunc func() (string, error)
-	HTTPClient   *http.Client
+	HTTPClient   *httpclient.Client
 }
 
 func New(c Config) (*Service, error) {
 	s := &Service{
-		httpClient: http.NewClient(c.GetTokenFunc),
+		httpClient: httpclient.NewClient(c.GetTokenFunc),
 		baseUrl:    c.BaseUrl,
 	}
 	return s, nil
