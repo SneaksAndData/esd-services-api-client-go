@@ -18,12 +18,28 @@ jobs:
         with:
           fetch-depth: 0
 
+#      - name: Create Release
+#        uses: SneaksAndData/github-actions/semver_release@v0.1.0
+#        with:
+#          major_v: 0
+#          minor_v: 0
       - name: Create Release
-        uses: SneaksAndData/github-actions/semver_release@v0.1.0
-        with:
-          major_v: 0
-          minor_v: 0
-        id: semver
-
-      - name: Output new version
-        run: echo "The new version is ${{ steps.semver.outputs.version }}"
+        run: |
+            set -Eeuo pipefail
+  
+          providedMajor=0
+          providedMinor=0
+          currentVersion=$(git describe --tags --abbrev=7)
+          currentMinor=$(echo "$currentVersion" | cut --delimiter=. --fields=2)
+          currentMajor=$(echo "$currentVersion" | cut --delimiter=. --fields=1 | cut --delimiter=v --fields=2)
+          
+          if [[ $currentMajor -eq $providedMajor ]] && [[ $providedMinor -eq $currentMinor ]];
+          then
+          currentRevision=$(echo "$currentVersion" | rev | cut --delimiter=. --fields=1 | rev | cut --delimiter=- --fields=1)
+          nextRevision=$(( currentRevision + 1 ))
+          else
+          nextRevision='0'
+          fi
+          nextVersion="v$providedMajor.$providedMinor.$nextRevision"
+          gh release create "$nextVersion" --generate-notes --target "${{ github.ref }}"
+          echo "version=$nextVersion" >> "$GITHUB_OUTPUT"
