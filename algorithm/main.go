@@ -13,7 +13,6 @@ import (
 type Service struct {
 	httpClient   *httpclient.Client
 	schedulerURL string
-	receiverURL  string
 	apiVersion   string
 }
 
@@ -51,9 +50,9 @@ const (
 )
 
 type ConfigurationEntry struct {
-	name      string
-	value     string
-	valueType *ConfigurationValueType
+	Name      string
+	Value     string
+	ValueType *ConfigurationValueType
 }
 
 // RetrieveRun fetches the results of a specific algorithm run identified by runID.
