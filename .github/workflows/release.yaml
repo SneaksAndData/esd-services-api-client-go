@@ -1,17 +1,12 @@
 name: Go Module Release
 
-#on: workflow_dispatch
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: workflow_dispatch
 
 jobs:
   create_release:
     name: Release
     runs-on: ubuntu-latest
-    #    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
