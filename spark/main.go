@@ -1,3 +1,4 @@
+// Package spark provides functionalities to interact with Beast
 package spark
 
 import (
@@ -9,34 +10,41 @@ import (
 	"net/http"
 )
 
-var failedStages = []interface{}{
+var failedStages = []string{
 	"FAILED",
 	"SCHEDULING_FAILED",
 	"RETRIES_EXCEEDED",
 	"SUBMISSION_FAILED",
 	"STALE",
 }
-var successStages = []interface{}{"COMPLETED"}
+var successStages = []string{"COMPLETED"}
 
+// Service encapsulates the HTTP client and URL needed to interact with the spark service.
 type Service struct {
 	httpClient *httpclient.Client
-	baseUrl    string
+	baseURL    string
 }
 
-type JobRequest struct {
-	inputs      []JobSocket
-	outputs     []JobSocket
-	args        interface{}
-	tag         string
-	parallelism int
+// JobParams defines the parameters for a Beast job
+type JobParams struct {
+	ClientTag           string
+	ExtraArguments      map[string]interface{}
+	ProjectInputs       []JobSocket
+	ProjectOutputs      []JobSocket
+	ExpectedParallelism int
 }
 
+// JobSocket defines the input/output data map
 type JobSocket struct {
-	alias      string
-	dataPath   string
-	dataFormat string
+	// Alias: mapping key to be used by a consumer
+	Alias string
+	// DataPath: fully qualified path to actual data, i.e. abfss://..., s3://... etc.
+	DataPath string
+	// DataFormat: data format, i.e. csv, json, delta etc.
+	DataFormat string
 }
 
+// SubmissionConfiguration defines the CRD used by Beast to run Spark jobs
 type SubmissionConfiguration struct {
 	RootPath          string      `json:"rootPath"`
 	ProjectName       string      `json:"projectName"`
@@ -45,20 +53,55 @@ type SubmissionConfiguration struct {
 }
 
 type submission struct {
-	Id    string
-	Stage interface{}
+	ID    string
+	Stage string
 }
 
-func (s Service) SubmitJob(request JobRequest, sparkJobName string) (string, error) {
-	// TODO: check if submission already exists
-	targetURL := fmt.Sprintf("%s/job/submit/%s", s.baseUrl, sparkJobName)
-	return s.httpClient.MakeRequest(http.MethodPost, targetURL, request)
+// RunJob runs a job through Beast
+//
+// Parameters:
+//
+// - request: Parameters for Beast Job body
+//
+// - sparkJobName: Name of the SparkJob to invoke
+func (s Service) RunJob(request JobParams, sparkJobName string) (string, error) {
+	submissionID, err := s.checkExistingSubmission(request.ClientTag)
+	if err != nil {
+		return "", fmt.Errorf("failed to check if submission exists: %w", err)
+	}
+
+	if submissionID != "" {
+		return submissionID, nil
+	}
+
+	r, err := s.submitJob(request, sparkJobName)
+	if err != nil {
+		return "", fmt.Errorf("submit job failed with error: %w", err)
+	}
+	return r.ID, nil
 }
 
-func (s Service) CheckExistingSubmission(tag string) (string, error) {
-	//fmt.Println(fmt.Sprintf("Looking for existing submission of %s", tag))
+func (s Service) submitJob(request JobParams, sparkJobName string) (submission, error) {
+	log.Printf("Submitting request: %+v", request)
+	targetURL := fmt.Sprintf("%s/job/submit/%s", s.baseURL, sparkJobName)
+	result, err := s.httpClient.MakeRequest(http.MethodPost, targetURL, request)
+	if err != nil {
+		return submission{}, fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	var sub submission
+	if err := json.Unmarshal([]byte(result), &sub); err != nil {
+		return submission{
+			ID:    "",
+			Stage: "",
+		}, fmt.Errorf("error unmarshaling response: %w", err)
+	}
+	log.Printf("Beast has accepted the request, stage: %s, id: %s", sub.Stage, sub.ID)
+	return sub, nil
+}
+
+func (s Service) checkExistingSubmission(tag string) (string, error) {
 	log.Printf("Looking for existing submission of %s", tag)
-	targetURL := fmt.Sprintf("%s/job/requests/tags/%s", s.baseUrl, tag)
+	targetURL := fmt.Sprintf("%s/job/requests/tags/%s", s.baseURL, tag)
 	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
@@ -68,23 +111,20 @@ func (s Service) CheckExistingSubmission(tag string) (string, error) {
 		return "", nil
 	}
 
-	//var jsonResponse map[string]interface{}
-	var arr []string
-	if err := json.Unmarshal([]byte(response), &arr); err != nil {
+	var ids []string
+	if err := json.Unmarshal([]byte(response), &ids); err != nil {
 		return "", fmt.Errorf("error unmarshaling response: %w", err)
 	}
 
 	var runningSubmissions []submission
-	//var jsonResponse map[string]interface{}
-	//json.Unmarshal([]byte(response), &jsonResponse)
-	for _, id := range arr {
+	for _, id := range ids {
 		stage, err := s.GetLifecycleStage(id)
 		if err != nil {
 			return "", fmt.Errorf("error getting lifecycle stage for %s: %w", id, err)
 		}
-		if !slices.Contains(successStages, stage) && !slices.Contains(failedStages, stage) {
+		if !slices.Contains(successStages, stage.(string)) && !slices.Contains(failedStages, stage.(string)) {
 			log.Printf("Found a running submission of %s: %s", tag, id)
-			runningSubmissions = append(runningSubmissions, submission{Id: id, Stage: stage})
+			runningSubmissions = append(runningSubmissions, submission{ID: id, Stage: stage.(string)})
 		}
 	}
 
@@ -96,20 +136,21 @@ func (s Service) CheckExistingSubmission(tag string) (string, error) {
 	if len(runningSubmissions) > 1 {
 		return "", fmt.Errorf("fatal: more than one submission of %s is running: %+v. Please review their status and restart/terminate the task accordingly", tag, runningSubmissions)
 	}
-	a := runningSubmissions[0]
-	fmt.Println(a)
 	run, err := json.Marshal(runningSubmissions[0])
 	if err != nil {
 		return "", fmt.Errorf("error marshaling running submission: %w", err)
 	}
-	str := string(run)
 
-	return str, err
-
+	return string(run), err
 }
 
+// GetLifecycleStage returns the lifecycle stage for a given request
+//
+// Parameters:
+//
+// - id: A request identifier to read lifecycle stage info for
 func (s Service) GetLifecycleStage(id string) (interface{}, error) {
-	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseUrl, id)
+	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseURL, id)
 	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
@@ -121,38 +162,57 @@ func (s Service) GetLifecycleStage(id string) (interface{}, error) {
 	return jsonMap["lifeCycleStage"], nil
 }
 
+// GetRuntimeInfo returns runtime information for the given request
+//
+// Parameters:
+//
+// - id: A request identifier to read runtime info for
 func (s Service) GetRuntimeInfo(id string) (string, error) {
-	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseUrl, id)
+	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseURL, id)
 	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 }
 
+// GetConfiguration returns a deployed SparkJob configuration
+//
+// Parameters:
+//
+// - name: Name of the configuration to find
 func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) {
-	targetURL := fmt.Sprintf("%s/job/deployed/%s", s.baseUrl, name)
+	targetURL := fmt.Sprintf("%s/job/deployed/%s", s.baseURL, name)
 	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
 	var jsonMap SubmissionConfiguration
-	json.Unmarshal([]byte(response), &jsonMap)
+	if err := json.Unmarshal([]byte(response), &jsonMap); err != nil {
+		return SubmissionConfiguration{}, fmt.Errorf("error unmarshaing response %w", err)
+	}
 
 	return jsonMap, nil
 }
 
+// GetLogs returns logs for a running or a completed submission
+//
+// Parameters:
+//
+// - id: Submission request identifier
 func (s Service) GetLogs(id string) (string, error) {
-	targetURL := fmt.Sprintf("%s/job/logs/%s", s.baseUrl, id)
+	targetURL := fmt.Sprintf("%s/job/logs/%s", s.baseURL, id)
 	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 }
 
+// Config represents the configuration needed to create a new spark Service instance.
 type Config struct {
-	BaseUrl      string
+	BaseURL      string
 	GetTokenFunc func() (string, error)
 	HTTPClient   *httpclient.Client
 }
 
+// New creates a new instance of the spark Service using the provided Config.
 func New(c Config) (*Service, error) {
 	s := &Service{
 		httpClient: httpclient.NewClient(c.GetTokenFunc),
-		baseUrl:    c.BaseUrl,
+		baseURL:    c.BaseURL,
 	}
 	return s, nil
 }
