@@ -59,8 +59,7 @@ func preparePayload(claims []string, operation string) claimPayload {
 	}
 }
 
-func (s Service) AddUser(user string, provider string) (string, error)
-{
+func (s Service) AddUser(user string, provider string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimUrl, provider, user)
 
 	return s.httpClient.MakeRequest("POST", targetURL, nil)
