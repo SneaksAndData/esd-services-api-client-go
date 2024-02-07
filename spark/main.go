@@ -4,9 +4,10 @@ package spark
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SneaksAndData/esd-services-api-client-go/shared/http"
+	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
 	"golang.org/x/exp/slices"
 	"log"
+	"net/http"
 )
 
 // Predefined lists of stages indicating job failure.
@@ -23,7 +24,7 @@ var successStages = []string{"COMPLETED"}
 
 // Service struct encapsulates the HTTP client and base URL for interacting with Beast.
 type Service struct {
-	httpClient *http.Client
+	httpClient *httpclient.Client
 	baseURL    string
 }
 
@@ -79,7 +80,7 @@ func (s Service) RunJob(request JobParams, sparkJobName string) (string, error) 
 func (s Service) submitJob(request JobParams, sparkJobName string) (submission, error) {
 	log.Printf("Submitting request: %+v", request)
 	targetURL := fmt.Sprintf("%s/job/submit/%s", s.baseURL, sparkJobName)
-	result, err := s.httpClient.MakeRequest("POST", targetURL, request)
+	result, err := s.httpClient.MakeRequest(http.MethodPost, targetURL, request)
 	if err != nil {
 		return submission{}, fmt.Errorf("error making request to %s: %w", targetURL, err)
 	}
@@ -98,7 +99,7 @@ func (s Service) submitJob(request JobParams, sparkJobName string) (submission, 
 func (s Service) checkExistingSubmission(tag string) (string, error) {
 	log.Printf("Looking for existing submission of %s", tag)
 	targetURL := fmt.Sprintf("%s/job/requests/tags/%s", s.baseURL, tag)
-	response, err := s.httpClient.MakeRequest("GET", targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
 	}
@@ -143,7 +144,7 @@ func (s Service) checkExistingSubmission(tag string) (string, error) {
 // GetLifecycleStage retrieves the current lifecycle stage of a submission.
 func (s Service) GetLifecycleStage(id string) (interface{}, error) {
 	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseURL, id)
-	response, err := s.httpClient.MakeRequest("GET", targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
 	}
@@ -157,13 +158,13 @@ func (s Service) GetLifecycleStage(id string) (interface{}, error) {
 // GetRuntimeInfo retrieves the runtime information of a submission.
 func (s Service) GetRuntimeInfo(id string) (string, error) {
 	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseURL, id)
-	return s.httpClient.MakeRequest("GET", targetURL, nil)
+	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 }
 
 // GetConfiguration checks if a configuration is deployed with the specified name.
 func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) {
 	targetURL := fmt.Sprintf("%s/job/deployed/%s", s.baseURL, name)
-	response, err := s.httpClient.MakeRequest("GET", targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -178,20 +179,20 @@ func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) 
 // GetLogs retrieves the logs of a submission.
 func (s Service) GetLogs(id string) (string, error) {
 	targetURL := fmt.Sprintf("%s/job/logs/%s", s.baseURL, id)
-	return s.httpClient.MakeRequest("GET", targetURL, nil)
+	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 }
 
 // Config represents the configuration needed to create a new Service instance.
 type Config struct {
 	BaseURL      string
 	GetTokenFunc func() (string, error)
-	HTTPClient   *http.Client
+	HTTPClient   *httpclient.Client
 }
 
 // New creates a new instance of the Service using the provided Config.
 func New(c Config) (*Service, error) {
 	s := &Service{
-		httpClient: http.NewClient(c.GetTokenFunc),
+		httpClient: httpclient.NewClient(c.GetTokenFunc),
 		baseURL:    c.BaseURL,
 	}
 	return s, nil
