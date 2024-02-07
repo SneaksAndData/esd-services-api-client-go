@@ -46,10 +46,36 @@ type JobSocket struct {
 
 // SubmissionConfiguration defines the CRD used by Beast to run Spark jobs
 type SubmissionConfiguration struct {
-	RootPath          string      `json:"rootPath"`
-	ProjectName       string      `json:"projectName"`
-	Runnable          string      `json:"runnable"`
-	SubmissionDetails interface{} `json:"submissionDetails"`
+	RootPath          string            `json:"rootPath"`
+	ProjectName       string            `json:"projectName"`
+	Runnable          string            `json:"runnable"`
+	SubmissionDetails SubmissionDetails `json:"submissionDetails"`
+}
+
+// SubmissionDetails defines job runtime details
+type SubmissionDetails struct {
+	Version                        string
+	ExecutionGroup                 string
+	ExpectedParallelism            int
+	FlexibleDriver                 bool
+	AdditionalDiverNodeTolerations map[string]string
+	MaxRuntimeHours                int
+	DebugMode                      RequestDebugMode
+	SubmissionMode                 string
+	ExtendedCodeMount              bool
+	SubmissionJobTemplate          string
+	ExecutorSpecTemplate           string
+	DriverJobRetries               int
+	DefaultArguments               map[string]string
+	Inputs                         []JobSocket
+	Outputs                        []JobSocket
+	Overwrite                      bool
+}
+
+// RequestDebugMode defines debug mode configuration
+type RequestDebugMode struct {
+	EventLogLocation string
+	MaxSizePerFile   string
 }
 
 type submission struct {
