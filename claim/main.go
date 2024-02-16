@@ -2,8 +2,6 @@
 package claim
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
 	"net/http"
@@ -34,23 +32,14 @@ func (s Service) GetClaim(user string, provider string) (string, error) {
 func (s Service) AddClaim(user string, provider string, claims []string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimURL, provider, user)
 
-	payload, err := json.Marshal(preparePayload(claims, "Insert"))
-	if err != nil {
-		return "", fmt.Errorf("error marshaling payload: %w", err)
-	}
-	return s.httpClient.MakeRequest(http.MethodPatch, targetURL, bytes.NewBuffer(payload))
+	return s.httpClient.MakeRequest(http.MethodPatch, targetURL, preparePayload(claims, "Insert"))
 }
 
 // RemoveClaim removes claims for a user under a specific provider.
 func (s Service) RemoveClaim(user string, provider string, claims []string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimURL, provider, user)
 
-	payload, err := json.Marshal(preparePayload(claims, "Delete"))
-	if err != nil {
-		return "", fmt.Errorf("error marshaling payload: %w", err)
-	}
-
-	return s.httpClient.MakeRequest(http.MethodPatch, targetURL, bytes.NewBuffer(payload))
+	return s.httpClient.MakeRequest(http.MethodPatch, targetURL, preparePayload(claims, "Delete"))
 }
 
 // preparePayload prepares the payload for claim operations.
