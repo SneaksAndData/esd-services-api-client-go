@@ -39,6 +39,7 @@ func New(c Config) (*Service, error) {
 	case c.Provider == "azuread":
 		s.httpClient = httpclient.NewClient(getAzureDefaultToken)
 	case strings.HasPrefix(c.Provider, "k8s"):
+		c.Provider = strings.TrimPrefix(c.Provider, "k8s-")
 		s.httpClient = httpclient.NewClient(getKubernetesToken)
 	default:
 		return nil, fmt.Errorf("unsupported token provider: %s", c.Provider)
