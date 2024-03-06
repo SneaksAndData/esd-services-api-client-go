@@ -1,13 +1,19 @@
 package auth
 
 import (
+	"fmt"
+	"github.com/SneaksAndData/esd-services-api-client-go/shared/file"
 	"os"
 )
 
 func getKubernetesToken() (string, error) {
-	tokenFile, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
-	if err != nil {
-		return "", err
+	tokenFilePath := "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	if !file.FileExists(tokenFilePath) {
+		return "", fmt.Errorf("could not find token file at %s", tokenFilePath)
 	}
-	return string(tokenFile), nil
+	token, err := os.ReadFile(tokenFilePath)
+	if err != nil {
+		return "", fmt.Errorf("error reading token file: %w", err)
+	}
+	return string(token), nil
 }
