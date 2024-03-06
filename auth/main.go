@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
 	"net/http"
+	"strings"
 )
 
 // Service encapsulates the HTTP client, token URL, and provider for retrieving authentication tokens.
@@ -22,9 +23,10 @@ func (s *Service) GetBoxerToken() (string, error) {
 
 // Config represents the configuration inputs for creating a new auth service.
 type Config struct {
-	TokenURL string // tokenURL is the URL used to retrieve the Boxer internal token e.g. http://boxer.test.sneaksanddata.com.
-	Env      string
-	Provider string
+	TokenURL     string // tokenURL is the URL used to retrieve the Boxer internal token e.g. http://boxer.test.sneaksanddata.com.
+	Env          string
+	Provider     string
+	GetTokenFunc func() (string, error) // Function to retrieve authentication token (if applicable, used mostly for token review)
 }
 
 // New initializes a new Service instance using the provided Config.
@@ -34,9 +36,13 @@ func New(c Config) (*Service, error) {
 	s.tokenURL = c.TokenURL
 	s.provider = c.Provider
 
-	switch c.Provider {
-	case "azuread":
+	switch {
+	case c.Provider == "azuread":
 		s.httpClient = httpclient.NewClient(getAzureDefaultToken)
+	case strings.HasPrefix(c.Provider, "k8s"):
+		s.httpClient = httpclient.NewClient(getKubernetesToken)
+	case c.Provider == "":
+		s.httpClient = httpclient.NewClient(c.GetTokenFunc)
 	default:
 		return nil, fmt.Errorf("unsupported token provider: %s", c.Provider)
 	}
