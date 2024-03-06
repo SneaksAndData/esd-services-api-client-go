@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
 	"net/http"
+	"strings"
 )
 
 // Service encapsulates the HTTP client, token URL, and provider for retrieving authentication tokens.
@@ -34,9 +35,11 @@ func New(c Config) (*Service, error) {
 	s.tokenURL = c.TokenURL
 	s.provider = c.Provider
 
-	switch c.Provider {
-	case "azuread":
+	switch {
+	case c.Provider == "azuread":
 		s.httpClient = httpclient.NewClient(getAzureDefaultToken)
+	case strings.HasPrefix(c.Provider, "k8s"):
+		s.httpClient = httpclient.NewClient(getKubernetesToken)
 	default:
 		return nil, fmt.Errorf("unsupported token provider: %s", c.Provider)
 	}
