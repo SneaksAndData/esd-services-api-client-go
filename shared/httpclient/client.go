@@ -1,3 +1,10 @@
+// Package httpclient provides a convenient wrapper around the standard http.Client, introducing functionality for automatic token retrieval and management.
+// This package simplifies the process of making authenticated HTTP requests by encapsulating the logic for token acquisition, token refresh, and request retries upon authentication failures.
+//
+// The primary component of this package is the Client struct, which extends http.Client
+// with additional capabilities to automatically handle authentication tokens for requests.
+// Clients can specify a custom function for token retrieval, which is invoked as needed
+// to obtain or refresh tokens before making requests.
 package httpclient
 
 import (

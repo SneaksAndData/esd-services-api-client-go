@@ -1,4 +1,4 @@
-// Package algorithm provides functionalities to interact crystal
+// Package algorithm provides functionalities to interact with Crystal
 package algorithm
 
 import (
