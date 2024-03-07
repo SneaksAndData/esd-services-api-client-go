@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -38,7 +39,7 @@ func (c *Client) MakeRequest(method, url string, payload interface{}) (string, e
 		return "", fmt.Errorf("failed to get token: %v", err)
 	}
 
-	request, err := c.prepareRequest(method, url, payload, token)
+	request, err := c.prepareRequest(method, url, payload, strings.TrimSpace(token))
 	if err != nil {
 		return "", err
 	}
