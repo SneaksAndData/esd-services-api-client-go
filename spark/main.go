@@ -211,7 +211,7 @@ func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) 
 	}
 	var jsonMap SubmissionConfiguration
 	if err := json.Unmarshal([]byte(response), &jsonMap); err != nil {
-		return SubmissionConfiguration{}, fmt.Errorf("error unmarshaing response %w", err)
+		return SubmissionConfiguration{}, fmt.Errorf("error unmarshalling response %w", err)
 	}
 
 	return jsonMap, nil
