@@ -38,7 +38,7 @@ type JobParams struct {
 type JobSocket struct {
 	// Alias: mapping key to be used by a consumer
 	Alias string `json:"alias"`
-	// DataPath: fully qualified path to actual data, i.e. abfss://..., s3://... etc.
+	// DataPath: fully qualified path to actual data, i.e. abfss://..., s3a://... etc.
 	DataPath string `json:"dataPath"`
 	// DataFormat: data format, i.e. csv, json, delta etc.
 	DataFormat string `json:"dataFormat"`
