@@ -27,21 +27,21 @@ type Service struct {
 
 // JobParams defines the parameters for a Beast job
 type JobParams struct {
-	ClientTag           string
-	ExtraArguments      map[string]interface{}
-	ProjectInputs       []JobSocket
-	ProjectOutputs      []JobSocket
-	ExpectedParallelism int
+	ClientTag           string                 `json:"clientTag"`
+	ExtraArguments      map[string]interface{} `json:"extraArguments"`
+	ProjectInputs       []JobSocket            `json:"projectInputs"`
+	ProjectOutputs      []JobSocket            `json:"projectOutputs"`
+	ExpectedParallelism int                    `json:"expectedParallelism"`
 }
 
 // JobSocket defines the input/output data map
 type JobSocket struct {
 	// Alias: mapping key to be used by a consumer
-	Alias string
+	Alias string `json:"alias"`
 	// DataPath: fully qualified path to actual data, i.e. abfss://..., s3://... etc.
-	DataPath string
+	DataPath string `json:"dataPath"`
 	// DataFormat: data format, i.e. csv, json, delta etc.
-	DataFormat string
+	DataFormat string `json:"dataFormat"`
 }
 
 // SubmissionConfiguration defines the CRD used by Beast to run Spark jobs
@@ -54,22 +54,22 @@ type SubmissionConfiguration struct {
 
 // SubmissionDetails defines job runtime details
 type SubmissionDetails struct {
-	Version                        string
-	ExecutionGroup                 string
-	ExpectedParallelism            int
-	FlexibleDriver                 bool
-	AdditionalDiverNodeTolerations map[string]string
-	MaxRuntimeHours                int
-	DebugMode                      RequestDebugMode
-	SubmissionMode                 string
-	ExtendedCodeMount              bool
-	SubmissionJobTemplate          string
-	ExecutorSpecTemplate           string
-	DriverJobRetries               int
-	DefaultArguments               map[string]string
-	Inputs                         []JobSocket
-	Outputs                        []JobSocket
-	Overwrite                      bool
+	Version                        string            `json:"version"`
+	ExecutionGroup                 string            `json:"executionGroup"`
+	ExpectedParallelism            int               `json:"expectedParallelism"`
+	FlexibleDriver                 bool              `json:"flexibleDriver"`
+	AdditionalDiverNodeTolerations map[string]string `json:"additionalDiverNodeTolerations"`
+	MaxRuntimeHours                int               `json:"maxRuntimeHours"`
+	DebugMode                      RequestDebugMode  `json:"debugMode"`
+	SubmissionMode                 string            `json:"submissionMode"`
+	ExtendedCodeMount              bool              `json:"extendedCodeMount"`
+	SubmissionJobTemplate          string            `json:"submissionJobTemplate"`
+	ExecutorSpecTemplate           string            `json:"executorSpecTemplate"`
+	DriverJobRetries               int               `json:"driverJobRetries"`
+	DefaultArguments               map[string]string `json:"defaultArguments"`
+	Inputs                         []JobSocket       `json:"inputs"`
+	Outputs                        []JobSocket       `json:"outputs"`
+	Overwrite                      bool              `json:"overwrite"`
 }
 
 // RequestDebugMode defines debug mode configuration
