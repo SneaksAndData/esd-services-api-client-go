@@ -74,8 +74,8 @@ type SubmissionDetails struct {
 
 // RequestDebugMode defines debug mode configuration
 type RequestDebugMode struct {
-	EventLogLocation string
-	MaxSizePerFile   string
+	EventLogLocation string `json:"eventLogLocation"`
+	MaxSizePerFile   string `json:"maxSizePerFile"`
 }
 
 type submission struct {
