@@ -54,28 +54,28 @@ type SubmissionConfiguration struct {
 
 // SubmissionDetails defines job runtime details
 type SubmissionDetails struct {
-	Version                        string            `json:"version"`
-	ExecutionGroup                 string            `json:"executionGroup"`
-	ExpectedParallelism            int               `json:"expectedParallelism"`
-	FlexibleDriver                 bool              `json:"flexibleDriver"`
-	AdditionalDiverNodeTolerations map[string]string `json:"additionalDiverNodeTolerations"`
-	MaxRuntimeHours                int               `json:"maxRuntimeHours"`
-	DebugMode                      RequestDebugMode  `json:"debugMode"`
-	SubmissionMode                 string            `json:"submissionMode"`
-	ExtendedCodeMount              bool              `json:"extendedCodeMount"`
-	SubmissionJobTemplate          string            `json:"submissionJobTemplate"`
-	ExecutorSpecTemplate           string            `json:"executorSpecTemplate"`
-	DriverJobRetries               int               `json:"driverJobRetries"`
-	DefaultArguments               map[string]string `json:"defaultArguments"`
-	Inputs                         []JobSocket       `json:"inputs"`
-	Outputs                        []JobSocket       `json:"outputs"`
-	Overwrite                      bool              `json:"overwrite"`
+	Version                         string            `json:"version"`
+	ExecutionGroup                  string            `json:"executionGroup"`
+	ExpectedParallelism             int               `json:"expectedParallelism"`
+	FlexibleDriver                  bool              `json:"flexibleDriver"`
+	AdditionalDriverNodeTolerations map[string]string `json:"additionalDriverNodeTolerations"`
+	MaxRuntimeHours                 int               `json:"maxRuntimeHours"`
+	DebugMode                       RequestDebugMode  `json:"debugMode"`
+	SubmissionMode                  string            `json:"submissionMode"`
+	ExtendedCodeMount               bool              `json:"extendedCodeMount"`
+	SubmissionJobTemplate           string            `json:"submissionJobTemplate"`
+	ExecutorSpecTemplate            string            `json:"executorSpecTemplate"`
+	DriverJobRetries                int               `json:"driverJobRetries"`
+	DefaultArguments                map[string]string `json:"defaultArguments"`
+	Inputs                          []JobSocket       `json:"inputs"`
+	Outputs                         []JobSocket       `json:"outputs"`
+	Overwrite                       bool              `json:"overwrite"`
 }
 
 // RequestDebugMode defines debug mode configuration
 type RequestDebugMode struct {
-	EventLogLocation string
-	MaxSizePerFile   string
+	EventLogLocation string `json:"eventLogLocation"`
+	MaxSizePerFile   string `json:"maxSizePerFile"`
 }
 
 type submission struct {
