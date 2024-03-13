@@ -92,6 +92,12 @@ func (s Service) CreateRun(algorithmName string, input map[string]interface{}, t
 
 }
 
+// CancelRun cancels an ongoing algorithm run
+func (s Service) CancelRun(algorithmName string, requestTag string) (string, error) {
+	targetURL := fmt.Sprintf("%s/algorithm/%s/results/%s/requests/%s", s.schedulerURL, s.apiVersion, algorithmName, requestTag)
+	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+}
+
 // Config represents the configuration needed to create a new Service instance.
 type Config struct {
 	GetTokenFunc func() (string, error) // Function to retrieve authentication token
