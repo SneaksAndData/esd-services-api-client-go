@@ -58,7 +58,12 @@ type ConfigurationEntry struct {
 // RetrieveRun fetches the results of a specific algorithm run identified by runID.
 func (s Service) RetrieveRun(runID string, algorithmName string) (string, error) {
 	targetURL := fmt.Sprintf("%s/algorithm/%s/results/%s/requests/%s", s.schedulerURL, s.apiVersion, algorithmName, runID)
-	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
+
 }
 
 // CreateRun initiates a new run of an algorithm with the given name, input parameters, and tag.
@@ -88,7 +93,11 @@ func (s Service) CreateRun(algorithmName string, input map[string]interface{}, t
 		CustomConfiguration: customConfig,
 		Tag:                 tag,
 	}
-	return s.httpClient.MakeRequest(http.MethodPost, targetURL, body)
+	response, err := s.httpClient.MakeRequest(http.MethodPost, targetURL, body)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
 
 }
 

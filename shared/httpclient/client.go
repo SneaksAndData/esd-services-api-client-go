@@ -33,15 +33,15 @@ func NewClient(getTokenFunc func() (string, error)) *Client {
 
 // MakeRequest creates and executes an HTTP request using the given method, URL, and payload.
 // It automatically handles token retrieval and will retry the request once if the token is expired.
-func (c *Client) MakeRequest(method, url string, payload interface{}) (string, error) {
+func (c *Client) MakeRequest(method, url string, payload interface{}) ([]byte, error) {
 	token, err := c.getToken()
 	if err != nil {
-		return "", fmt.Errorf("failed to get token: %v", err)
+		return nil, fmt.Errorf("failed to get token: %v", err)
 	}
 
 	request, err := c.prepareRequest(method, url, payload, strings.TrimSpace(token))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	responseBody, err := c.doRequest(request)
@@ -49,21 +49,21 @@ func (c *Client) MakeRequest(method, url string, payload interface{}) (string, e
 		if err.Error() == "authorization failed" {
 			refreshedToken, err := c.getToken()
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 
 			// Retry the requests with the new token
 			retryRequest, retryErr := c.prepareRequest(method, url, payload, refreshedToken)
 			if retryErr != nil {
-				return "", retryErr
+				return nil, retryErr
 			}
 			responseBody, err = c.doRequest(retryRequest)
 			if err != nil {
-				return "", err // Return error if retry also fails
+				return nil, err // Return error if retry also fails
 			}
 			return responseBody, nil // Return successful response from retry
 		}
-		return "", err // Return original error if not an auth failure
+		return nil, err // Return original error if not an auth failure
 
 	}
 
@@ -94,23 +94,23 @@ func (c *Client) prepareRequest(method, url string, payload interface{}, token s
 }
 
 // doRequest executes the given *http.Request and returns the response body as a string.
-func (c *Client) doRequest(req *http.Request) (string, error) {
+func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return "", fmt.Errorf("authorization failed")
+		return nil, fmt.Errorf("authorization failed")
 	} else if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		return "", fmt.Errorf("HTTP request failed with status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("HTTP request failed with status code: %d", resp.StatusCode)
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(respBody), nil
+	return respBody, nil
 }
