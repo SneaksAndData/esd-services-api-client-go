@@ -8,6 +8,7 @@ import (
 	"golang.org/x/exp/slices"
 	"log"
 	"net/http"
+	"strings"
 )
 
 var failedStages = []string{
@@ -195,7 +196,11 @@ func (s Service) GetLifecycleStage(id string) (interface{}, error) {
 // - id: A request identifier to read runtime info for
 func (s Service) GetRuntimeInfo(id string) (string, error) {
 	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseURL, id)
-	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
 }
 
 // GetConfiguration returns a deployed SparkJob configuration
@@ -210,7 +215,7 @@ func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) 
 		fmt.Println(err)
 	}
 	var jsonMap SubmissionConfiguration
-	if err := json.Unmarshal([]byte(response), &jsonMap); err != nil {
+	if err := json.Unmarshal(response, &jsonMap); err != nil {
 		return SubmissionConfiguration{}, fmt.Errorf("error unmarshalling response %w", err)
 	}
 
@@ -224,7 +229,16 @@ func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) 
 // - id: Submission request identifier
 func (s Service) GetLogs(id string) (string, error) {
 	targetURL := fmt.Sprintf("%s/job/logs/%s", s.baseURL, id)
-	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	var logsArray []string
+	err = json.Unmarshal(response, &logsArray)
+	if err != nil {
+		return "", fmt.Errorf("error parsing API response: %v", err)
+	}
+	return strings.Join(logsArray, "\n"), nil
 }
 
 // Config represents the configuration needed to create a new spark Service instance.

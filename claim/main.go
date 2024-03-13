@@ -24,22 +24,31 @@ type claimPayload struct {
 // GetClaim retrieves the claims for a given user and provider.
 func (s Service) GetClaim(user string, provider string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimURL, provider, user)
-
-	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
 }
 
 // AddClaim adds claims for a user under a specific provider.
 func (s Service) AddClaim(user string, provider string, claims []string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimURL, provider, user)
-
-	return s.httpClient.MakeRequest(http.MethodPatch, targetURL, preparePayload(claims, "Insert"))
+	response, err := s.httpClient.MakeRequest(http.MethodPatch, targetURL, preparePayload(claims, "Insert"))
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
 }
 
 // RemoveClaim removes claims for a user under a specific provider.
 func (s Service) RemoveClaim(user string, provider string, claims []string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimURL, provider, user)
-
-	return s.httpClient.MakeRequest(http.MethodPatch, targetURL, preparePayload(claims, "Delete"))
+	response, err := s.httpClient.MakeRequest(http.MethodPatch, targetURL, preparePayload(claims, "Delete"))
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
 }
 
 // preparePayload prepares the payload for claim operations.
@@ -59,15 +68,21 @@ func preparePayload(claims []string, operation string) claimPayload {
 // AddUser creates a new user under a specific provider.
 func (s Service) AddUser(user string, provider string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimURL, provider, user)
-
-	return s.httpClient.MakeRequest(http.MethodPost, targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodPost, targetURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
 }
 
 // RemoveUser deletes a user under a specific provider.
 func (s Service) RemoveUser(user string, provider string) (string, error) {
 	targetURL := fmt.Sprintf("%s/claim/%s/%s", s.claimURL, provider, user)
-
-	return s.httpClient.MakeRequest(http.MethodDelete, targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodDelete, targetURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
 }
 
 // Config holds the configuration needed to initialize a new Service instance.
