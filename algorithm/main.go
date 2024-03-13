@@ -93,8 +93,8 @@ func (s Service) CreateRun(algorithmName string, input map[string]interface{}, t
 }
 
 // CancelRun cancels an ongoing algorithm run
-func (s Service) CancelRun(algorithmName string, requestTag string) (string, error) {
-	targetURL := fmt.Sprintf("%s/algorithm/%s/results/%s/requests/%s", s.schedulerURL, s.apiVersion, algorithmName, requestTag)
+func (s Service) CancelRun(algorithmName string, requestId string) (string, error) {
+	targetURL := fmt.Sprintf("%s/algorithm/%s/results/%s/requests/%s", s.schedulerURL, s.apiVersion, algorithmName, requestId)
 	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
 }
 
