@@ -32,7 +32,7 @@ type JobParams struct {
 	ExtraArguments      map[string]interface{} `json:"extraArguments"`
 	ProjectInputs       []JobSocket            `json:"projectInputs"`
 	ProjectOutputs      []JobSocket            `json:"projectOutputs"`
-	ExpectedParallelism int                    `json:"expectedParallelism"`
+	ExpectedParallelism *int                   `json:"expectedParallelism"`
 }
 
 // JobSocket defines the input/output data map
