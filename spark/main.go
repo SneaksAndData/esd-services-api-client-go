@@ -8,6 +8,7 @@ import (
 	"golang.org/x/exp/slices"
 	"log"
 	"net/http"
+	"strings"
 )
 
 var failedStages = []string{
@@ -27,21 +28,21 @@ type Service struct {
 
 // JobParams defines the parameters for a Beast job
 type JobParams struct {
-	ClientTag           string
-	ExtraArguments      map[string]interface{}
-	ProjectInputs       []JobSocket
-	ProjectOutputs      []JobSocket
-	ExpectedParallelism int
+	ClientTag           string                 `json:"clientTag"`
+	ExtraArguments      map[string]interface{} `json:"extraArguments"`
+	ProjectInputs       []JobSocket            `json:"projectInputs"`
+	ProjectOutputs      []JobSocket            `json:"projectOutputs"`
+	ExpectedParallelism *int                   `json:"expectedParallelism"`
 }
 
 // JobSocket defines the input/output data map
 type JobSocket struct {
 	// Alias: mapping key to be used by a consumer
-	Alias string
-	// DataPath: fully qualified path to actual data, i.e. abfss://..., s3://... etc.
-	DataPath string
+	Alias string `json:"alias"`
+	// DataPath: fully qualified path to actual data, i.e. abfss://..., s3a://... etc.
+	DataPath string `json:"dataPath"`
 	// DataFormat: data format, i.e. csv, json, delta etc.
-	DataFormat string
+	DataFormat string `json:"dataFormat"`
 }
 
 // SubmissionConfiguration defines the CRD used by Beast to run Spark jobs
@@ -54,28 +55,28 @@ type SubmissionConfiguration struct {
 
 // SubmissionDetails defines job runtime details
 type SubmissionDetails struct {
-	Version                        string
-	ExecutionGroup                 string
-	ExpectedParallelism            int
-	FlexibleDriver                 bool
-	AdditionalDiverNodeTolerations map[string]string
-	MaxRuntimeHours                int
-	DebugMode                      RequestDebugMode
-	SubmissionMode                 string
-	ExtendedCodeMount              bool
-	SubmissionJobTemplate          string
-	ExecutorSpecTemplate           string
-	DriverJobRetries               int
-	DefaultArguments               map[string]string
-	Inputs                         []JobSocket
-	Outputs                        []JobSocket
-	Overwrite                      bool
+	Version                         string            `json:"version"`
+	ExecutionGroup                  string            `json:"executionGroup"`
+	ExpectedParallelism             int               `json:"expectedParallelism"`
+	FlexibleDriver                  bool              `json:"flexibleDriver"`
+	AdditionalDriverNodeTolerations map[string]string `json:"additionalDriverNodeTolerations"`
+	MaxRuntimeHours                 int               `json:"maxRuntimeHours"`
+	DebugMode                       RequestDebugMode  `json:"debugMode"`
+	SubmissionMode                  string            `json:"submissionMode"`
+	ExtendedCodeMount               bool              `json:"extendedCodeMount"`
+	SubmissionJobTemplate           string            `json:"submissionJobTemplate"`
+	ExecutorSpecTemplate            string            `json:"executorSpecTemplate"`
+	DriverJobRetries                int               `json:"driverJobRetries"`
+	DefaultArguments                map[string]string `json:"defaultArguments"`
+	Inputs                          []JobSocket       `json:"inputs"`
+	Outputs                         []JobSocket       `json:"outputs"`
+	Overwrite                       bool              `json:"overwrite"`
 }
 
 // RequestDebugMode defines debug mode configuration
 type RequestDebugMode struct {
-	EventLogLocation string
-	MaxSizePerFile   string
+	EventLogLocation string `json:"eventLogLocation"`
+	MaxSizePerFile   string `json:"maxSizePerFile"`
 }
 
 type submission struct {
@@ -195,7 +196,11 @@ func (s Service) GetLifecycleStage(id string) (interface{}, error) {
 // - id: A request identifier to read runtime info for
 func (s Service) GetRuntimeInfo(id string) (string, error) {
 	targetURL := fmt.Sprintf("%s/job/requests/%s", s.baseURL, id)
-	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
 }
 
 // GetConfiguration returns a deployed SparkJob configuration
@@ -210,8 +215,8 @@ func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) 
 		fmt.Println(err)
 	}
 	var jsonMap SubmissionConfiguration
-	if err := json.Unmarshal([]byte(response), &jsonMap); err != nil {
-		return SubmissionConfiguration{}, fmt.Errorf("error unmarshaing response %w", err)
+	if err := json.Unmarshal(response, &jsonMap); err != nil {
+		return SubmissionConfiguration{}, fmt.Errorf("error unmarshalling response %w", err)
 	}
 
 	return jsonMap, nil
@@ -224,7 +229,16 @@ func (s Service) GetConfiguration(name string) (SubmissionConfiguration, error) 
 // - id: Submission request identifier
 func (s Service) GetLogs(id string) (string, error) {
 	targetURL := fmt.Sprintf("%s/job/logs/%s", s.baseURL, id)
-	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	var logsArray []string
+	err = json.Unmarshal(response, &logsArray)
+	if err != nil {
+		return "", fmt.Errorf("error parsing API response: %v", err)
+	}
+	return strings.Join(logsArray, "\n"), nil
 }
 
 // Config represents the configuration needed to create a new spark Service instance.

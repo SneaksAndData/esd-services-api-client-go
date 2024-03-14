@@ -25,21 +25,21 @@ type Payload struct {
 }
 
 type CustomConfiguration struct {
-	ImageRepository      string
-	ImageTag             string
-	DeadlineSeconds      int
-	MaximumRetries       int
+	ImageRepository      *string
+	ImageTag             *string
+	DeadlineSeconds      *int
+	MaximumRetries       *int
 	Env                  []ConfigurationEntry
 	Secrets              []string
 	Args                 []ConfigurationEntry
-	CpuLimit             string
-	MemoryLimit          string
-	Workgroup            string
+	CpuLimit             *string
+	MemoryLimit          *string
+	Workgroup            *string
 	AdditionalWorkgroups map[string]string
-	Version              string
+	Version              *string
 	MonitoringParameters []string
 	CustomResources      map[string]string
-	SpeculativeAttempts  int
+	SpeculativeAttempts  *int
 }
 
 type ConfigurationValueType string
@@ -58,7 +58,12 @@ type ConfigurationEntry struct {
 // RetrieveRun fetches the results of a specific algorithm run identified by runID.
 func (s Service) RetrieveRun(runID string, algorithmName string) (string, error) {
 	targetURL := fmt.Sprintf("%s/algorithm/%s/results/%s/requests/%s", s.schedulerURL, s.apiVersion, algorithmName, runID)
-	return s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
+
 }
 
 // CreateRun initiates a new run of an algorithm with the given name, input parameters, and tag.
@@ -66,20 +71,19 @@ func (s Service) CreateRun(algorithmName string, input map[string]interface{}, t
 	targetURL := fmt.Sprintf("%s/algorithm/%s/run/%s", s.schedulerURL, s.apiVersion, algorithmName)
 	// Handle CustomConfiguration
 	conf, exists := input["custom_configuration"]
-	if !exists {
-		return "", fmt.Errorf("custom_configuration not provided")
-	}
-	customConfigMap, ok := conf.(map[string]interface{})
-	if !ok {
-		return "", fmt.Errorf("custom_configuration is not of the expected type")
-	}
-	customConfigJSON, err := json.Marshal(customConfigMap)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal custom_configuration: %w", err)
-	}
 	var customConfig CustomConfiguration
-	if err := json.Unmarshal(customConfigJSON, &customConfig); err != nil {
-		return "", fmt.Errorf("failed to unmarshal custom_configuration into CustomConfiguration: %w", err)
+	if exists {
+		customConfigMap, ok := conf.(map[string]interface{})
+		if !ok {
+			return "", fmt.Errorf("the 'custom_configuration' provided does not match the required format. It should be a map of key-value pairs")
+		}
+		customConfigJSON, err := json.Marshal(customConfigMap)
+		if err != nil {
+			return "", fmt.Errorf("could not serialize 'custom_configuration' into a JSON string: %w", err)
+		}
+		if err := json.Unmarshal(customConfigJSON, &customConfig); err != nil {
+			return "", fmt.Errorf("could not deserialize the JSON string into the 'CustomConfiguration' structure: %w", err)
+		}
 	}
 
 	body := Payload{
@@ -88,8 +92,24 @@ func (s Service) CreateRun(algorithmName string, input map[string]interface{}, t
 		CustomConfiguration: customConfig,
 		Tag:                 tag,
 	}
-	return s.httpClient.MakeRequest(http.MethodPost, targetURL, body)
+	response, err := s.httpClient.MakeRequest(http.MethodPost, targetURL, body)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
+}
 
+// CancelRun cancels an ongoing algorithm run
+func (s Service) CancelRun(algorithmName string, requestId string, initiator string, reason string) (string, error) {
+	targetURL := fmt.Sprintf("%s/algorithm/%s/cancel/%s/requests/%s", s.schedulerURL, s.apiVersion, algorithmName, requestId)
+	payload := make(map[string]string)
+	payload["initiator"] = initiator
+	payload["reason"] = reason
+	response, err := s.httpClient.MakeRequest(http.MethodPost, targetURL, payload)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+	return string(response), nil
 }
 
 // Config represents the configuration needed to create a new Service instance.
