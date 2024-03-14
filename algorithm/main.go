@@ -75,14 +75,14 @@ func (s Service) CreateRun(algorithmName string, input map[string]interface{}, t
 	if exists {
 		customConfigMap, ok := conf.(map[string]interface{})
 		if !ok {
-			return "", fmt.Errorf("custom_configuration is not of the expected type")
+			return "", fmt.Errorf("the 'custom_configuration' provided does not match the required format. It should be a map of key-value pairs")
 		}
 		customConfigJSON, err := json.Marshal(customConfigMap)
 		if err != nil {
-			return "", fmt.Errorf("failed to marshal custom_configuration: %w", err)
+			return "", fmt.Errorf("could not serialize 'custom_configuration' into a JSON string: %w", err)
 		}
 		if err := json.Unmarshal(customConfigJSON, &customConfig); err != nil {
-			return "", fmt.Errorf("failed to unmarshal custom_configuration into CustomConfiguration: %w", err)
+			return "", fmt.Errorf("could not deserialize the JSON string into the 'CustomConfiguration' structure: %w", err)
 		}
 	}
 
