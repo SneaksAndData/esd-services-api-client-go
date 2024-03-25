@@ -45,6 +45,14 @@ type JobSocket struct {
 	DataFormat string `json:"dataFormat"`
 }
 
+type JobRequest struct {
+	Inputs              []JobSocket            `json:"inputs"`
+	Outputs             []JobSocket            `json:"outputs"`
+	ExtraArgs           map[string]interface{} `json:"extraArgs"`
+	ClientTag           string                 `json:"clientTag"`
+	ExpectedParallelism *int                   `json:"expectedParallelism"`
+}
+
 // SubmissionConfiguration defines the CRD used by Beast to run Spark jobs
 type SubmissionConfiguration struct {
 	RootPath          string            `json:"rootPath"`
@@ -100,15 +108,22 @@ func (s Service) RunJob(request JobParams, sparkJobName string) (string, error) 
 	if submissionID != "" {
 		return submissionID, nil
 	}
+	payload := JobRequest{
+		Inputs:              request.ProjectInputs,
+		Outputs:             request.ProjectOutputs,
+		ExtraArgs:           request.ExtraArguments,
+		ClientTag:           request.ClientTag,
+		ExpectedParallelism: request.ExpectedParallelism,
+	}
 
-	r, err := s.submitJob(request, sparkJobName)
+	r, err := s.submitJob(payload, sparkJobName)
 	if err != nil {
 		return "", fmt.Errorf("submit job failed with error: %w", err)
 	}
 	return r.ID, nil
 }
 
-func (s Service) submitJob(request JobParams, sparkJobName string) (submission, error) {
+func (s Service) submitJob(request JobRequest, sparkJobName string) (submission, error) {
 	log.Printf("Submitting request: %+v", request)
 	targetURL := fmt.Sprintf("%s/job/submit/%s", s.baseURL, sparkJobName)
 	result, err := s.httpClient.MakeRequest(http.MethodPost, targetURL, request)
