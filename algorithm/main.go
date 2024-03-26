@@ -67,10 +67,10 @@ func (s Service) RetrieveRun(runID string, algorithmName string) (string, error)
 }
 
 func (s Service) CreateRun(algorithmName string, input Payload, tag string) (string, error) {
-	err := validator.New().Struct(input)
-	if err != nil {
+	if err := validator.New().Struct(input); err != nil {
 		log.Fatalf("Validation failed: %v\n", err)
 	}
+
 	targetURL := fmt.Sprintf("%s/algorithm/%s/run/%s", s.schedulerURL, s.apiVersion, algorithmName)
 
 	input.AlgorithmName = algorithmName
