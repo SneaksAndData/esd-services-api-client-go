@@ -45,14 +45,6 @@ type JobSocket struct {
 	DataFormat string `json:"dataFormat"`
 }
 
-type JobRequest struct {
-	Inputs              []JobSocket            `json:"inputs"`
-	Outputs             []JobSocket            `json:"outputs"`
-	ExtraArgs           map[string]interface{} `json:"extraArgs"`
-	ClientTag           string                 `json:"clientTag"`
-	ExpectedParallelism *int                   `json:"expectedParallelism"`
-}
-
 // SubmissionConfiguration defines the CRD used by Beast to run Spark jobs
 type SubmissionConfiguration struct {
 	RootPath          string            `json:"rootPath"`
@@ -90,6 +82,15 @@ type RequestDebugMode struct {
 type submission struct {
 	ID    string
 	Stage string
+}
+
+// JobRequest defines the request body for a Beast submission
+type JobRequest struct {
+	Inputs              []JobSocket            `json:"inputs"`
+	Outputs             []JobSocket            `json:"outputs"`
+	ExtraArgs           map[string]interface{} `json:"extraArgs"`
+	ClientTag           string                 `json:"clientTag"`
+	ExpectedParallelism *int                   `json:"expectedParallelism"`
 }
 
 // RunJob runs a job through Beast
