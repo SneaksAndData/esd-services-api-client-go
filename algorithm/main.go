@@ -2,11 +2,11 @@
 package algorithm
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
+	"github.com/go-playground/validator/v10"
+	"log"
+	"net/http"
 )
 
 // Service encapsulates the HTTP client and URLs needed to interact with the algorithm service.
@@ -18,28 +18,28 @@ type Service struct {
 
 // Payload defines the structure of the request body for creating algorithm runs.
 type Payload struct {
-	AlgorithmParameters map[string]interface{}
+	AlgorithmParameters map[string]interface{} `validate:"required"`
 	AlgorithmName       string
 	CustomConfiguration CustomConfiguration
 	Tag                 string
 }
 
 type CustomConfiguration struct {
-	ImageRepository      *string
-	ImageTag             *string
-	DeadlineSeconds      *int
-	MaximumRetries       *int
-	Env                  []ConfigurationEntry
-	Secrets              []string
-	Args                 []ConfigurationEntry
-	CpuLimit             *string
-	MemoryLimit          *string
-	Workgroup            *string
-	AdditionalWorkgroups map[string]string
-	Version              *string
-	MonitoringParameters []string
-	CustomResources      map[string]string
-	SpeculativeAttempts  *int
+	ImageRepository      *string              `json:"imageRepository"`
+	ImageTag             *string              `json:"imageTag"`
+	DeadlineSeconds      *int                 `json:"deadlineSeconds"`
+	MaximumRetries       *int                 `json:"maximumRetries"`
+	Env                  []ConfigurationEntry `json:"env"`
+	Secrets              []string             `json:"secrets"`
+	Args                 []ConfigurationEntry `json:"args"`
+	CpuLimit             *string              `json:"cpuLimit"`
+	MemoryLimit          *string              `json:"memoryLimit"`
+	Workgroup            *string              `json:"workgroup"`
+	AdditionalWorkgroups map[string]string    `json:"additionalWorkgroups"`
+	Version              *string              `json:"version"`
+	MonitoringParameters []string             `json:"MonitoringParameters"`
+	CustomResources      map[string]string    `json:"customResources"`
+	SpeculativeAttempts  *int                 `json:"speculativeAttempts"`
 }
 
 type ConfigurationValueType string
@@ -50,9 +50,9 @@ const (
 )
 
 type ConfigurationEntry struct {
-	Name      string
-	Value     string
-	ValueType *ConfigurationValueType
+	Name      string                  `json:"name"`
+	Value     string                  `json:"value"`
+	ValueType *ConfigurationValueType `json:"valueFrom"`
 }
 
 // RetrieveRun fetches the results of a specific algorithm run identified by runID.
@@ -66,33 +66,16 @@ func (s Service) RetrieveRun(runID string, algorithmName string) (string, error)
 
 }
 
-// CreateRun initiates a new run of an algorithm with the given name, input parameters, and tag.
-func (s Service) CreateRun(algorithmName string, input map[string]interface{}, tag string) (string, error) {
-	targetURL := fmt.Sprintf("%s/algorithm/%s/run/%s", s.schedulerURL, s.apiVersion, algorithmName)
-	// Handle CustomConfiguration
-	conf, exists := input["custom_configuration"]
-	var customConfig CustomConfiguration
-	if exists {
-		customConfigMap, ok := conf.(map[string]interface{})
-		if !ok {
-			return "", fmt.Errorf("the 'custom_configuration' provided does not match the required format. It should be a map of key-value pairs")
-		}
-		customConfigJSON, err := json.Marshal(customConfigMap)
-		if err != nil {
-			return "", fmt.Errorf("could not serialize 'custom_configuration' into a JSON string: %w", err)
-		}
-		if err := json.Unmarshal(customConfigJSON, &customConfig); err != nil {
-			return "", fmt.Errorf("could not deserialize the JSON string into the 'CustomConfiguration' structure: %w", err)
-		}
+func (s Service) CreateRun(algorithmName string, input Payload, tag string) (string, error) {
+	if err := validator.New().Struct(input); err != nil {
+		log.Fatalf("Validation failed: %v\n", err)
 	}
 
-	body := Payload{
-		AlgorithmParameters: input["algorithm_parameters"].(map[string]interface{}),
-		AlgorithmName:       algorithmName,
-		CustomConfiguration: customConfig,
-		Tag:                 tag,
-	}
-	response, err := s.httpClient.MakeRequest(http.MethodPost, targetURL, body)
+	targetURL := fmt.Sprintf("%s/algorithm/%s/run/%s", s.schedulerURL, s.apiVersion, algorithmName)
+
+	input.AlgorithmName = algorithmName
+	input.Tag = tag
+	response, err := s.httpClient.MakeRequest(http.MethodPost, targetURL, input)
 	if err != nil {
 		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
 	}
