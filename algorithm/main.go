@@ -37,7 +37,7 @@ type CustomConfiguration struct {
 	Workgroup            *string              `json:"workgroup"`
 	AdditionalWorkgroups map[string]string    `json:"additionalWorkgroups"`
 	Version              *string              `json:"version"`
-	MonitoringParameters []string             `json:"MonitoringParameters"`
+	MonitoringParameters []string             `json:"monitoringParameters"`
 	CustomResources      map[string]string    `json:"customResources"`
 	SpeculativeAttempts  *int                 `json:"speculativeAttempts"`
 }
