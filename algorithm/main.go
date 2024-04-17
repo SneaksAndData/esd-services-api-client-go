@@ -2,6 +2,7 @@
 package algorithm
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
 	"github.com/go-playground/validator/v10"
@@ -55,6 +56,11 @@ type ConfigurationEntry struct {
 	ValueType *ConfigurationValueType `json:"valueFrom"`
 }
 
+type PayloadResponse struct {
+	RequestID  string `json:"requestId"`
+	PayloadUri string `json:"payloadUri"`
+}
+
 // RetrieveRun fetches the results of a specific algorithm run identified by runID.
 func (s Service) RetrieveRun(runID string, algorithmName string) (string, error) {
 	targetURL := fmt.Sprintf("%s/algorithm/%s/results/%s/requests/%s", s.schedulerURL, s.apiVersion, algorithmName, runID)
@@ -63,7 +69,22 @@ func (s Service) RetrieveRun(runID string, algorithmName string) (string, error)
 		return "", fmt.Errorf("error making request to %s: %w", targetURL, err)
 	}
 	return string(response), nil
+}
 
+// RetrievePayloadUri fetches the payload URI of a specific algorithm run identified by runID.
+func (s Service) RetrievePayloadUri(runID string, algorithmName string) (*PayloadResponse, error) {
+	targetURL := fmt.Sprintf("%s/algorithm/%s/payload/%s/requests/%s", s.schedulerURL, s.apiVersion, algorithmName, runID)
+	response, err := s.httpClient.MakeRequest(http.MethodGet, targetURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error making request to %s: %w", targetURL, err)
+	}
+
+	var payloadResponse PayloadResponse
+	err = json.Unmarshal(response, &payloadResponse)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling response: %w", err)
+	}
+	return &payloadResponse, nil
 }
 
 func (s Service) CreateRun(algorithmName string, input Payload, tag string) (string, error) {
