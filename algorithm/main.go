@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/SneaksAndData/esd-services-api-client-go/shared/httpclient"
 	"github.com/go-playground/validator/v10"
-	"log"
 	"net/http"
 )
 
@@ -89,7 +88,7 @@ func (s Service) RetrievePayloadUri(runID string, algorithmName string) (*Payloa
 
 func (s Service) CreateRun(algorithmName string, input Payload, tag string) (string, error) {
 	if err := validator.New().Struct(input); err != nil {
-		log.Fatalf("Validation failed: %v\n", err)
+		return "", fmt.Errorf("Validation failed: %v\n", err)
 	}
 
 	targetURL := fmt.Sprintf("%s/algorithm/%s/run/%s", s.schedulerURL, s.apiVersion, algorithmName)
