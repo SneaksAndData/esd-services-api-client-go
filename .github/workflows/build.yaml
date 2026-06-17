@@ -28,7 +28,7 @@ jobs:
         run: go build -v ./...
       - name: Lint
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           LINT_VERSION=1.54.1
           curl -fsSL https://github.com/golangci/golangci-lint/releases/download/v${LINT_VERSION}/golangci-lint-${LINT_VERSION}-linux-amd64.tar.gz | \
             tar xz --strip-components 1 --wildcards \*/golangci-lint
